@@ -29,8 +29,7 @@ module.exports = (client) => {
         return await new Promise((resolve) => {
             guild.invites.fetch().then((invites) => {
                 for (const invite of invites) {
-                    console.log(invite);
-                    if (code === invite[0]) {
+                    if (code === invite[0] || code.toLowerCase() === 'sasrp') {
                         resolve(true);
                         return;
                     }
@@ -52,8 +51,6 @@ module.exports = (client) => {
         catch {
             return;
         }
-        if(await message.guild.id !== '806274102327246859') return;
-        console.log(message.mentions)
         if(await isAllowed(message)) return;
         
         const { guild, member, content } = message;
