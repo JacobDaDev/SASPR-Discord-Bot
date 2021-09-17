@@ -23,7 +23,7 @@ module.exports = (client) => {
             .addField('Error:', `${error}`)
             .setTimestamp()
             .setFooter('Time error occured  ', client.user.displayAvatarURL());
-        client.channels.cache.get(config.logging.errorChannel).send({embeds: messageDelete});
+        client.channels.cache.get(config.logging.errorChannel).send({embeds: [ messageDelete]});
     });
 
     client.on('shardError', async (error) => {
@@ -34,7 +34,7 @@ module.exports = (client) => {
             .addField('Error:', `${error}`)
             .setTimestamp()
             .setFooter('Time error occured  ', client.user.displayAvatarURL());
-        client.channels.cache.get(config.logging.errorChannel).send({embeds: messageDelete});
+        client.channels.cache.get(config.logging.errorChannel).send({embeds: [ messageDelete]});
     });
 
     process.on('unhandledRejection', error => {
@@ -45,7 +45,7 @@ module.exports = (client) => {
             .addField('Error:', `${error}`)
             .setTimestamp()
             .setFooter('Time error occured  ', client.user.displayAvatarURL());
-        client.channels.cache.get(config.logging.errorChannel).send({embeds: messageDelete});
+        client.channels.cache.get(config.logging.errorChannel).send({embeds: [messageDelete]});
     });
 
     // 	||\\    //||    |||||||		|||||||
@@ -97,7 +97,7 @@ module.exports = (client) => {
             else {
                 messageDelete.addField('Message deleted by user ID:', 'Unknown');
             }
-            await client.channels.cache.get(config.logging.loggingChannel).send({embeds: messageDelete});
+            await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ messageDelete]});
 
         }
         // If message is cached (as it is supposed to).
@@ -143,7 +143,7 @@ module.exports = (client) => {
                 else {
                     messageDelete.addField('Message deleted by user ID:', 'Unknown');
                 }
-                await client.channels.cache.get(config.logging.loggingChannel).send({embeds: messageDelete});
+                await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ messageDelete]});
             }
         }
     });
@@ -168,7 +168,7 @@ module.exports = (client) => {
                 .addField('Message ID:', `${newMessage.id}`)
                 .setTimestamp()
                 .setFooter('Time message edited  ', client.user.displayAvatarURL());
-            await client.channels.cache.get(config.logging.loggingChannel).send({embeds: messageEdit});
+            await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ messageEdit]});
         }
     });
 
@@ -208,7 +208,7 @@ module.exports = (client) => {
             .addField('Channel ID:', `${channel.id}`)
             .setTimestamp()
             .setFooter('Time channel created  ', client.user.displayAvatarURL());
-        await client.channels.cache.get(config.logging.loggingChannel).send({embeds: channelCreate});
+        await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ channelCreate]});
     });
 
     // Channel update log
@@ -267,7 +267,7 @@ module.exports = (client) => {
             channelUpdate.setDescription('Unknown, this might trigger when a role is deleted or created.');
         }
 
-        await client.channels.cache.get(config.logging.loggingChannel).send({embeds: channelUpdate});
+        await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ channelUpdate]});
     });
 
     // Channel deleted log
@@ -307,7 +307,7 @@ module.exports = (client) => {
             .addField('Channel ID:', `${channel.id}`)
             .setTimestamp()
             .setFooter('Time channel deleted  ', client.user.displayAvatarURL());
-        await client.channels.cache.get(config.logging.loggingChannel).send({embeds: channelCreate});
+        await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ channelCreate]});
     });
 
     // |||||||   ||		    |||||||||
@@ -356,7 +356,7 @@ module.exports = (client) => {
             .setTimestamp()
             .setFooter('Time ban made ', client.user.displayAvatarURL());
         console.log('mhmm');
-        await client.channels.cache.get(config.logging.loggingChannel).send({embeds: banCreate});
+        await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ banCreate]});
 
     });
 
@@ -396,7 +396,7 @@ module.exports = (client) => {
             .addField('Unbanned member ID:', `${user.id}`)
             .setTimestamp()
             .setFooter('Time unban made ', client.user.displayAvatarURL());
-        await client.channels.cache.get(config.logging.loggingChannel).send({embeds: banRemove});
+        await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ banRemove]});
 
     });
 
@@ -435,7 +435,7 @@ module.exports = (client) => {
                 .addField('Invite Link Used:', `${usedInvite.uses} times`)
                 .setTimestamp()
                 .setFooter('Time User Joined ', client.user.displayAvatarURL());
-            await client.channels.cache.get(config.logging.loggingChannel).send({embeds: logMemberAdd);
+            await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ logMemberAdd);
         }
         catch(err) {
             console.log(err);
