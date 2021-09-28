@@ -5,27 +5,26 @@ const { MessageEmbed } = require('discord.js');
 const config = require('../config/cfg');
 
 // Get the mute schema.
-const muteSchema = require('../schemas/mute-schema');
+const MuteSchema = require('../schemas/mute-schema');
 
 // Get the warning schema.
-const warnSchema = require('../schemas/warnings-schema');
+const WarnSchema = require('../schemas/warnings-schema');
 
 // For handling time.
 const ms = require('ms');
 
 const warn = async (member, reason, message, client) => {
     // Create the database info
-    try{
-        await new warnSchema({
+    try {
+        await new WarnSchema({
             userId: member.id,
             userTag: member.user.username,
             guildId: message.guild.id,
             reason,
             staffId: message.member.id,
-            staffTag: message.member.tag,
+            staffTag: message.member.tag
         }).save();
-    }
-    catch(err) {
+    } catch (err) {
         console.error('Erro while adding the warning to database: ' + err);
         const messageDelete = new MessageEmbed()
             .setColor('FF0000')
@@ -36,10 +35,10 @@ const warn = async (member, reason, message, client) => {
         client.channels.cache.get(config.logging.errorChannel).send(messageDelete);
         return;
     }
-    let warningAmount = undefined;
-    await warnSchema.find({
+    let warningAmount;
+    await WarnSchema.find({
         userId: member.id,
-        guildId: message.guild.id,
+        guildId: message.guild.id
     }).then(async (warnings) => {
         warningAmount = await warnings.length;
     });
@@ -49,7 +48,6 @@ const warn = async (member, reason, message, client) => {
         .setDescription(`${message.member}, ${member} has been warned!\n**Current amount of warnings:** ${warningAmount}\n**Reason for warning:** ${reason}`)
         .setTimestamp()
         .setFooter(message.guild.name, client.user.displayAvatarURL());
-
 
     // Log embed.
     const logGRoleEmbed = new MessageEmbed()
@@ -65,11 +63,11 @@ const warn = async (member, reason, message, client) => {
         .setTimestamp()
         .setFooter(`${message.guild.name}`, client.user.displayAvatarURL());
 
-    if(config.commandConfig.warnMember.warnsBeforeMute != '0') {
-        if(warningAmount >= Number(config.commandConfig.warnMember.warnsBeforeMute)) {
+    if (parseInt(config.commandConfig.warnMember.warnsBeforeMute) !== 0) {
+        if (warningAmount >= Number(config.commandConfig.warnMember.warnsBeforeMute)) {
             const mutedRoleConf = config.commandConfig.muteMember.muteRoleName;
             let muterole = await message.guild.roles.cache.find(role => {
-                return role.name == mutedRoleConf;
+                return role.name === mutedRoleConf;
             });
             if (!muterole) {
                 try {
@@ -77,18 +75,18 @@ const warn = async (member, reason, message, client) => {
                         data: {
                             name: mutedRoleConf,
                             color: '#ff0000',
-                            permissions:[],
-                        } });
+                            permissions: []
+                        }
+                    });
 
                     await message.guild.channels.cache.forEach(async (channel) => {
                         await channel.permissionOverwrites.create(muterole, {
                             SEND_MESSAGES: false,
                             MANAGE_MESSAGES: false,
-                            ADD_REACTIONS: false,
+                            ADD_REACTIONS: false
                         });
                     });
-                }
-                catch(err) {
+                } catch (err) {
                     console.error('Error:' + err);
                     const messageDelete = new MessageEmbed()
                         .setColor('FF0000')
@@ -99,11 +97,10 @@ const warn = async (member, reason, message, client) => {
                     client.channels.cache.get(config.logging.errorChannel).send(messageDelete);
                 }
             }
-            if(!member.roles.cache.has(muterole.id)) {
+            if (!member.roles.cache.has(muterole.id)) {
                 try {
                     await member.roles.add(muterole);
-                }
-                catch(err) {
+                } catch (err) {
                     console.error('Error while adding roles: ' + err);
                     const messageDelete = new MessageEmbed()
                         .setColor('FF0000')
@@ -120,8 +117,8 @@ const warn = async (member, reason, message, client) => {
             const time1 = expires.getTime();
             const expireTime = time1 + ms('30m');
             expires.setTime(expireTime);
-            try{
-                await new muteSchema({
+            try {
+                await new MuteSchema({
                     userId: member.id,
                     guildId: message.guild.id,
                     reason,
@@ -129,10 +126,9 @@ const warn = async (member, reason, message, client) => {
                     staffId: message.member.id,
                     staffTag: message.member.tag,
                     expires,
-                    current: true,
+                    current: true
                 }).save();
-            }
-            catch(err) {
+            } catch (err) {
                 console.error('Erro while adding the mute to database: ' + err);
                 const messageDelete = new MessageEmbed()
                     .setColor('FF0000')
@@ -153,7 +149,7 @@ const warn = async (member, reason, message, client) => {
         }
     }
 
-    message.reply({embeds: [successEmbed]}).then(msg => {
+    message.reply({ embeds: [successEmbed] }).then(msg => {
         msg.delete({ timeout: 25000 });
     }).catch((err) => {
         console.error('Error while deleting message: ' + err);
@@ -165,12 +161,10 @@ const warn = async (member, reason, message, client) => {
             .setFooter('Time error occured  ', client.user.displayAvatarURL());
         client.channels.cache.get(config.logging.errorChannel).send(messageDelete);
     })
-        .then(client.channels.cache.get(config.logging.loggingChannel).send({embeds: [logGRoleEmbed]}));
-
+        .then(client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [logGRoleEmbed] }));
 };
 
-function timeConversion(millisec) {
-
+function timeConversion (millisec) {
     const seconds = (millisec / 1000).toFixed(1);
 
     const minutes = (millisec / (1000 * 60)).toFixed(1);
@@ -181,19 +175,16 @@ function timeConversion(millisec) {
 
     if (seconds < 60) {
         return seconds + ' Seconds';
-    }
-    else if (minutes < 60) {
+    } else if (minutes < 60) {
         return minutes + ' Minutes';
-    }
-    else if (hours < 24) {
+    } else if (hours < 24) {
         return hours + ' Hours';
-    }
-    else {
+    } else {
         return days + ' Days';
     }
 }
 module.exports = {
-    mute(member, reason, time, role, message, client) {
+    mute (member, reason, time, role, message, client) {
     // To get the time mute expires
         const expires = new Date();
         const time1 = expires.getTime();
@@ -204,8 +195,7 @@ module.exports = {
         // Add the mute role to target
         try {
             member.roles.add(role);
-        }
-        catch(err) {
+        } catch (err) {
             console.error('Error while adding roles: ' + err);
             const messageDelete = new MessageEmbed()
                 .setColor('FF0000')
@@ -217,8 +207,8 @@ module.exports = {
             return;
         }
         // Create the database info
-        try{
-            new muteSchema({
+        try {
+            new MuteSchema({
                 userId: member.id,
                 guildId: role.guild.id,
                 reason,
@@ -226,10 +216,9 @@ module.exports = {
                 staffId: message.member.id,
                 staffTag: message.member.user.username,
                 expires,
-                current: true,
+                current: true
             }).save();
-        }
-        catch(err) {
+        } catch (err) {
             console.error('Erro while adding the mute to database: ' + err);
             const messageDelete = new MessageEmbed()
                 .setColor('FF0000')
@@ -240,14 +229,13 @@ module.exports = {
             client.channels.cache.get(config.logging.errorChannel).send(messageDelete);
             return;
         }
-        
+
         try {
         // Remove the role after time has passed
             setTimeout(async () => {
                 await member.roles.remove(role.id);
             }, time);
-        }
-        catch(err) {
+        } catch (err) {
             console.error('Erro while removing roles: ' + err);
             const messageDelete = new MessageEmbed()
                 .setColor('FF0000')
@@ -273,15 +261,13 @@ module.exports = {
             .setFooter(`${message.guild.name}`, client.user.displayAvatarURL())
             .setTimestamp();
 
-        client.channels.cache.get(config.logging.loggingChannel).send({embeds: [logMuteEmbed]});
-
+        client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [logMuteEmbed] });
     },
-
 
     // /////////////////////////////////////////////////////////////////////
     // ///       Warn member
     // ///       Warn Member
     // /////////////////////////////////////////////////////////////////////
 
-    warn,
+    warn
 };

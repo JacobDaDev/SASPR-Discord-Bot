@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const reqString = {
     type: String,
-    required: true,
+    required: true
 };
 
 const muteSchema = mongoose.Schema(
@@ -15,16 +15,16 @@ const muteSchema = mongoose.Schema(
         staffTag: reqString,
         expires: {
             type: Date,
-            required: true,
+            required: true
         },
         current: {
             type: Boolean,
-            required: true,
-        },
+            required: true
+        }
     },
     {
-        timestamps: true,
-    },
+        timestamps: true
+    }
 );
 
 module.exports = mongoose.model('mutes', muteSchema);

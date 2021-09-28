@@ -12,9 +12,9 @@ module.exports = (client) => {
         // Get info wether or not the mute is expired
         const conditional = {
             expires: {
-                $lt: now,
+                $lt: now
             },
-            current: true,
+            current: true
         };
         // Gives the info intself from the constant above
         const results = await muteSchema.find(conditional);
@@ -29,14 +29,14 @@ module.exports = (client) => {
                 const mutedRole = guild.roles.cache.find((role) => {
                     return role.name === mutedRoleConf;
                 });
-                if(member.roles.cache.some(role => role.name === mutedRole)) {
+                if (member.roles.cache.some(role => role.name === mutedRole)) {
                     // Then remove the role since he no longer should be muted
                     member.roles.remove(mutedRole);
                 }
             }
 
             await muteSchema.updateMany(conditional, {
-                current: false,
+                current: false
             });
         }
         // Make it run every 5 minutes
@@ -46,29 +46,28 @@ module.exports = (client) => {
     client.on('ready', async () => {
         const guildID = config.settings.guildID;
         const thisGuild = client.guilds.cache.find(guild => {
-            return guild.id == guildID;
+            return guild.id === guildID;
         });
         const clientMember = thisGuild.members.cache.get(client.user.id);
         let muterole = thisGuild.roles.cache.find(role => {
-            return role.name == mutedRoleConf;
+            return role.name === mutedRoleConf;
         });
         if (!muterole) {
-
             muterole = await thisGuild.roles.create({
                 data: {
                     name: `${mutedRoleConf || 'MUTED'}`,
                     color: '#ff0000',
-                    permissions:[],
-                } }).then(console.log(chalk.bold.red('\nCreated mute role! ') + chalk.bold(`It's named "${mutedRoleConf}"`))).catch(console.error());
+                    permissions: []
+                }
+            }).then(console.log(`\nCreated mute role! It's named "${mutedRoleConf}"`)).catch(console.error());
             thisGuild.channels.cache.forEach(async (channel) => {
                 try {
                     await channel.permissionOverwrites.create(muterole, {
                         SEND_MESSAGES: false,
                         MANAGE_MESSAGES: false,
-                        ADD_REACTIONS: false,
+                        ADD_REACTIONS: false
                     }).then(muterole.setPosition(clientMember.roles.highest.rawPosition - 1)).catch(console.error());
-                }
-                catch (err) {
+                } catch (err) {
                     console.error(err);
                 }
             });
@@ -83,7 +82,7 @@ module.exports = (client) => {
         const currentMute = await muteSchema.findOne({
             userId: id,
             guildId: guild.id,
-            current: true,
+            current: true
         });
         // If data returns true (user should still be muted)
         if (currentMute) {
@@ -99,5 +98,5 @@ module.exports = (client) => {
     });
 };
 module.exports.config = {
-    loadDBFirst: true,
+    loadDBFirst: true
 };

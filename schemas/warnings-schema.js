@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const reqString = {
     type: String,
-    required: true,
+    required: true
 };
 
 const warnSchema = mongoose.Schema(
@@ -12,11 +12,11 @@ const warnSchema = mongoose.Schema(
         guildId: reqString,
         reason: reqString,
         staffId: reqString,
-        staffTag: reqString,
+        staffTag: reqString
     },
     {
-        timestamps: true,
-    },
+        timestamps: true
+    }
 );
 
 module.exports = mongoose.model('warnings', warnSchema);

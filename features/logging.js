@@ -8,13 +8,6 @@ const config = require('../config/cfg');
 const dur = require('humanize-duration');
 
 module.exports = (client) => {
-
-    // |||||||||	||||||||||	  ||||||||||
-    // ||			||		||	  ||	  ||
-    // |||||||||	||||||||||	  ||||||||||
-    // ||			||  \\		  ||  \\
-    // |||||||||	||   \\		  ||   \\
-
     client.on('error', async (error) => {
         console.error(error);
         const messageDelete = new Discord.MessageEmbed()
@@ -23,7 +16,7 @@ module.exports = (client) => {
             .addField('Error:', `${error}`)
             .setTimestamp()
             .setFooter('Time error occured  ', client.user.displayAvatarURL());
-        client.channels.cache.get(config.logging.errorChannel).send({embeds: [ messageDelete]});
+        client.channels.cache.get(config.logging.errorChannel).send({ embeds: [messageDelete] });
     });
 
     client.on('shardError', async (error) => {
@@ -34,7 +27,7 @@ module.exports = (client) => {
             .addField('Error:', `${error}`)
             .setTimestamp()
             .setFooter('Time error occured  ', client.user.displayAvatarURL());
-        client.channels.cache.get(config.logging.errorChannel).send({embeds: [ messageDelete]});
+        client.channels.cache.get(config.logging.errorChannel).send({ embeds: [messageDelete] });
     });
 
     process.on('unhandledRejection', error => {
@@ -45,19 +38,12 @@ module.exports = (client) => {
             .addField('Error:', `${error}`)
             .setTimestamp()
             .setFooter('Time error occured  ', client.user.displayAvatarURL());
-        client.channels.cache.get(config.logging.errorChannel).send({embeds: [messageDelete]});
+        client.channels.cache.get(config.logging.errorChannel).send({ embeds: [messageDelete] });
     });
-
-    // 	||\\    //||    |||||||		|||||||
-    // 	|| \\  // ||	||			||
-    // 	||  \\//  ||	|||||||		||  |||
-    // 	||   ||   ||	     ||		||   ||
-    // 	||   ||   ||	|||||||		|||||||
-
 
     // Message deleted log
     client.on('messageDelete', async (message) => {
-        if(message.channel.type === 'dm') return;
+        if (message.channel.type === 'dm') return;
         // Sometimes the message isn't cached so we need to use partials to cache it.
         if (message.partial) {
             // Add latency as audit logs aren't instantly updated, adding a higher latency will result in slower logs, but higher accuracy.
@@ -66,15 +52,15 @@ module.exports = (client) => {
             // Fetch a couple audit logs than just one as new entries could've been added right after this event was emitted.
             const fetchedLogs = await message.guild.fetchAuditLogs({
                 limit: 6,
-                type: 72,
+                type: 72
             }).catch(() => ({
-                entries: [],
+                entries: []
             }));
             const auditEntry = fetchedLogs.entries.find(a =>
                 // Small filter function to make use of the little discord provides to narrow down the correct audit entry.
                 a.extra.channel.id === message.channel.id &&
                 // Ignore entries that are older than 20 seconds to reduce false positives.
-                Date.now() - a.createdTimestamp < 20000,
+                Date.now() - a.createdTimestamp < 20000
             );
             let executor = '';
 
@@ -91,19 +77,15 @@ module.exports = (client) => {
                 .addField('Message deleted by:', `${executor}`)
                 .setTimestamp()
                 .setFooter('Time message deleted  ', client.user.displayAvatarURL());
-            if(executor !== 'Unknown, most likely deleted by bot.') {
+            if (executor !== 'Unknown, most likely deleted by bot.') {
                 messageDelete.addField('Message deleted by user ID:', `${executor.id}`);
-            }
-            else {
+            } else {
                 messageDelete.addField('Message deleted by user ID:', 'Unknown');
             }
-            await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ messageDelete]});
-
-        }
-        // If message is cached (as it is supposed to).
-        else {
+            await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [messageDelete] });
+        } else {
             if (!message.guild) return;
-            if(!message.author.bot) {
+            if (!message.author.bot) {
                 // Add latency as audit logs aren't instantly updated, adding a higher latency will result in slower logs, but higher accuracy.
                 await Discord.Util.delayFor(900);
 
@@ -111,9 +93,9 @@ module.exports = (client) => {
                 const fetchedLogs = await message.guild.fetchAuditLogs({
                     user: message.author,
                     limit: 6,
-                    type: 72,
+                    type: 72
                 }).catch(() => ({
-                    entries: [],
+                    entries: []
                 }));
 
                 const auditEntry = fetchedLogs.entries.find(a =>
@@ -121,7 +103,7 @@ module.exports = (client) => {
                     a.target.id === message.id &&
                     a.extra.channel.id === message.channel.id &&
                     // Ignore entries that are older than 20 seconds to reduce false positives.
-                    Date.now() - a.createdTimestamp < 20000,
+                    Date.now() - a.createdTimestamp < 20000
                 );
                 let executor = '';
 
@@ -137,28 +119,27 @@ module.exports = (client) => {
                     .addField('Message deleted by:', `${executor}`)
                     .setTimestamp()
                     .setFooter('Time message deleted  ', client.user.displayAvatarURL());
-                if(executor !== 'Unknown, most likely deleted by bot.') {
+                if (executor !== 'Unknown, most likely deleted by bot.') {
                     messageDelete.addField('Message deleted by user ID:', `${executor.id}`);
-                }
-                else {
+                } else {
                     messageDelete.addField('Message deleted by user ID:', 'Unknown');
                 }
-                await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ messageDelete]});
+                await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [messageDelete] });
             }
         }
     });
 
     // Message update log
     client.on('messageUpdate', async (oldMessage, newMessage) => {
-        if(oldMessage.channel.type === 'dm') return;
-        if(newMessage.partial || oldMessage.partial) {
+        if (oldMessage.channel.type === 'dm') return;
+        if (newMessage.partial || oldMessage.partial) {
             await newMessage.fetch().then((msg) => {
                 console.log(msg);
             });
         }
         if (!newMessage.guild) return;
         // Message updated embed
-        if(!newMessage.member.user.bot || !oldMessage.author.bot) {
+        if (!newMessage.member.user.bot || !oldMessage.author.bot) {
             const messageEdit = new Discord.MessageEmbed()
                 .setColor('FFFF00')
                 .setTitle('Message edited!')
@@ -168,35 +149,28 @@ module.exports = (client) => {
                 .addField('Message ID:', `${newMessage.id}`)
                 .setTimestamp()
                 .setFooter('Time message edited  ', client.user.displayAvatarURL());
-            await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ messageEdit]});
+            await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [messageEdit] });
         }
     });
 
-    //  ||||||||	||  	||	  ||\\    ||    ||
-    //  ||          ||		||	  || \\   ||	||
-    //  ||          ||||||||||	  ||  \\  ||	||
-    //  ||          ||		||	  ||   \\ ||	||
-    //  ||||||||	||		||	  ||    \\||	||||||||
-
     // Channel create log
     client.on('channelCreate', async (channel) => {
-        if(channel.type === 'dm') return;
+        if (channel.type === 'dm') return;
         const mutedRoleConf = config.commandConfig.muteMember.muteRoleName;
         const channel1 = client.channels.cache.find(c => {
             return c.id === channel.id;
         });
         const muterole = channel1.guild.roles.cache.find(role => {
-            return role.name == mutedRoleConf;
+            return role.name === mutedRoleConf;
         });
 
         try {
             await channel.createOverwrite(muterole, {
                 SEND_MESSAGES: false,
                 MANAGE_MESSAGES: false,
-                ADD_REACTIONS: false,
+                ADD_REACTIONS: false
             });
-        }
-        catch (err) {
+        } catch (err) {
             console.error(err);
         }
         // Channel create embed
@@ -208,34 +182,33 @@ module.exports = (client) => {
             .addField('Channel ID:', `${channel.id}`)
             .setTimestamp()
             .setFooter('Time channel created  ', client.user.displayAvatarURL());
-        await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ channelCreate]});
+        await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [channelCreate] });
     });
 
     // Channel update log
     client.on('channelUpdate', async (oldChannel, newChannel) => {
-        if(oldChannel.type === 'dm') return;
+        if (oldChannel.type === 'dm') return;
         // Add latency as audit logs aren't instantly updated, adding a higher latency will result in slower logs, but higher accuracy.
         await Discord.Util.delayFor(900);
 
         // Fetch a couple audit logs than just one as new entries could've been added right after this event was emitted.
         const fetchedLogs = await newChannel.guild.fetchAuditLogs({
             limit: 6,
-            type: 11,
+            type: 11
         }).catch(() => ({
-            entries: [],
+            entries: []
         }));
 
         const auditEntry = fetchedLogs.entries.find(a =>
-            a.target.id == newChannel.id &&
+            a.target.id === newChannel.id &&
             // Ignore entries that are older than 20 seconds to reduce false positives.
-            Date.now() - a.createdTimestamp < 20000,
+            Date.now() - a.createdTimestamp < 20000
         );
         let executor = '';
         // If entry exists, grab the user that deleted the message and display username + tag, if none, display 'Unknown'.
-        if(auditEntry) {
+        if (auditEntry) {
             executor = auditEntry ? auditEntry.executor : 'Unknown';
-        }
-        else {
+        } else {
             return;
         }
         // Channel create embed
@@ -252,49 +225,44 @@ module.exports = (client) => {
         const overwrites = oldChannel.permissionOverwrites.difference(newChannel.permissionOverwrites);
         if (newChannel.name !== oldChannel.name) {
             channelUpdate.setDescription(`**Old Name**: ${oldChannel.name}\n**New Name**: ${newChannel.name}`);
-        }
-        else if (newChannel.nsfw !== oldChannel.nsfw) {
+        } else if (newChannel.nsfw !== oldChannel.nsfw) {
             channelUpdate.setDescription(`${newChannel.name} is ${newChannel.nsfw ? 'now' : 'no longer'} set as **nsfw**`);
-        }
-        else if (newChannel.rateLimitPerUser !== oldChannel.rateLimitPerUser) {
+        } else if (newChannel.rateLimitPerUser !== oldChannel.rateLimitPerUser) {
             channelUpdate.setDescription(`**Old SlowMode**: ${dur(oldChannel.rateLimitPerUser * 1000)}\n**New SlowMode**: ${dur(newChannel.rateLimitPerUser * 1000)}`);
-        }
-        else if (overwrites.size) {
+        } else if (overwrites.size) {
             channelUpdate.setDescription(`**New Permission Overwrites:**\n${overwrites.filter(p => newChannel.permissionOverwrites.has(p.id)).map(s => s.type === 'role' ? oldChannel.guild.roles.cache.get(s.id).toString() : client.users.cache.get(s.id).toString()).join(' ') || 'None'}\n**Removed Permission Overwrites:**\n${overwrites.filter(p => !newChannel.permissionOverwrites.has(p.id)).map(s => s.type === 'role' ? oldChannel.guild.roles.cache.get(s.id).toString() : client.users.cache.get(s.id).toString()).join(' ') || 'None'}
     `);
-        }
-        else {
+        } else {
             channelUpdate.setDescription('Unknown, this might trigger when a role is deleted or created.');
         }
 
-        await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ channelUpdate]});
+        await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [channelUpdate] });
     });
 
     // Channel deleted log
     client.on('channelDelete', async (channel) => {
-        if(channel.type === 'dm') return;
+        if (channel.type === 'dm') return;
         // Add latency as audit logs aren't instantly updated, adding a higher latency will result in slower logs, but higher accuracy.
         await Discord.Util.delayFor(900);
 
         // Fetch a couple audit logs than just one as new entries could've been added right after this event was emitted.
         const fetchedLogs = await channel.guild.fetchAuditLogs({
             limit: 6,
-            type: 11,
+            type: 11
         }).catch(() => ({
-            entries: [],
+            entries: []
         }));
 
         const auditEntry = fetchedLogs.entries.find(a =>
-            a.target.id == channel.id &&
+            a.target.id === channel.id &&
             // Ignore entries that are older than 20 seconds to reduce false positives.
-            Date.now() - a.createdTimestamp < 20000,
+            Date.now() - a.createdTimestamp < 20000
         );
         let executor = '';
         // If entry exists, grab the user that deleted the message and display username + tag, if none, display 'Unknown'.
-        if(auditEntry) {
+        if (auditEntry) {
             executor = auditEntry ? auditEntry.executor : 'Unknown';
-        }
-        else {
+        } else {
             return;
         }
         // Channel deleted embed
@@ -307,14 +275,8 @@ module.exports = (client) => {
             .addField('Channel ID:', `${channel.id}`)
             .setTimestamp()
             .setFooter('Time channel deleted  ', client.user.displayAvatarURL());
-        await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ channelCreate]});
+        await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [channelCreate] });
     });
-
-    // |||||||   ||		    |||||||||
-    // ||		 ||         ||      ||
-    // ||  |||	 ||         ||      ||
-    // ||   ||   ||         ||      ||
-    // |||||||   ||||||||   |||||||||
 
     // Channel create log
     client.on('guildBanAdd', async (guild, user) => {
@@ -324,24 +286,23 @@ module.exports = (client) => {
         // Fetch a couple audit logs than just one as new entries could've been added right after this event was emitted.
         const fetchedLogs = await guild.fetchAuditLogs({
             limit: 6,
-            type: 22,
+            type: 22
         }).catch(() => ({
-            entries: [],
+            entries: []
         }));
 
         const auditEntry = fetchedLogs.entries.find(a =>
-            a.target.id == user.id &&
+            a.target.id === user.id &&
             // Ignore entries that are older than 20 seconds to reduce false positives.
-            Date.now() - a.createdTimestamp < 20000,
+            Date.now() - a.createdTimestamp < 20000
         );
 
         let executor = '';
         console.log('Yeess');
         // If entry exists, grab the user that deleted the message and display username + tag, if none, display 'Unknown'.
-        if(auditEntry) {
+        if (auditEntry) {
             executor = auditEntry ? auditEntry.executor : 'Unknown';
-        }
-        else {
+        } else {
             return;
         }
         // Channel create embed
@@ -356,8 +317,7 @@ module.exports = (client) => {
             .setTimestamp()
             .setFooter('Time ban made ', client.user.displayAvatarURL());
         console.log('mhmm');
-        await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ banCreate]});
-
+        await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [banCreate] });
     });
 
     client.on('guildBanRemove', async (guild, user) => {
@@ -367,23 +327,22 @@ module.exports = (client) => {
         // Fetch a couple audit logs than just one as new entries could've been added right after this event was emitted.
         const fetchedLogs = await guild.fetchAuditLogs({
             limit: 6,
-            type: 23,
+            type: 23
         }).catch(() => ({
-            entries: [],
+            entries: []
         }));
 
         const auditEntry = fetchedLogs.entries.find(a =>
-            a.target.id == user.id &&
+            a.target.id === user.id &&
             // Ignore entries that are older than 20 seconds to reduce false positives.
-            Date.now() - a.createdTimestamp < 20000,
+            Date.now() - a.createdTimestamp < 20000
         );
 
         let executor = '';
         // If entry exists, grab the user that deleted the message and display username + tag, if none, display 'Unknown'.
-        if(auditEntry) {
+        if (auditEntry) {
             executor = auditEntry ? auditEntry.executor : 'Unknown';
-        }
-        else {
+        } else {
             return;
         }
         // Channel remove embed
@@ -396,8 +355,7 @@ module.exports = (client) => {
             .addField('Unbanned member ID:', `${user.id}`)
             .setTimestamp()
             .setFooter('Time unban made ', client.user.displayAvatarURL());
-        await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ banRemove]});
-
+        await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [banRemove] });
     });
 
 /*     // Invite tracking.
@@ -447,5 +405,5 @@ module.exports.config = {
     displayName: 'Logging',
     dbName: 'TEST',
     // Wait for the database connection to be present
-    loadDBFirst: true,
+    loadDBFirst: true
 };

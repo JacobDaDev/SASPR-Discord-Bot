@@ -3,24 +3,23 @@ const { MessageEmbed, MessageButton, MessageActionRow, MessageAttachment } = req
 
 // HTML Transcript.
 const { generateTranscript } = require('reconlx');
-const axios = require('axios');
 
 // Incase of an error we need to get the error channel
 const config = require('../config/cfg');
 
-const tiecketSchema = require('../schemas/ticket-schema');
+const TiecketSchema = require('../schemas/ticket-schema');
 
 const amountOfTypes = async (member, type) => {
     console.log(member);
     console.log(type);
-    const types = await tiecketSchema.find({
+    const types = await TiecketSchema.find({
         userId: member,
         type: type,
-        current: true,
+        current: true
     });
     let tooMuchOfType = false;
-    let typeChannelID = undefined;
-    if(types.length > 0) {
+    let typeChannelID;
+    if (types.length > 0) {
         tooMuchOfType = true;
         typeChannelID = await types[0].channelID;
     }
@@ -84,12 +83,6 @@ const closeButtonDisabledButton = new MessageButton()
 
 const closeButtonDisabled = new MessageActionRow()
     .addComponents(closeButtonDisabledButton);
-const deleteButtonDisabled = new MessageActionRow()
-    .addComponents(deleteButtonDisabledButton);
-const keepButtonDisabled = new MessageActionRow()
-    .addComponents(keepButtonDisabledButton);
-const keepButton = new MessageActionRow()
-    .addComponents(keepButtonButton);
 const deleteButton = new MessageActionRow()
     .addComponents(deleteButtonButton);
 const closeButton = new MessageActionRow()
@@ -125,20 +118,20 @@ module.exports = async (client) => {
         .setAuthor('Loading...')
         .setTimestamp();
 
-    client.on('interactionCreate', async(interaction) => {
-        if(!interaction.isButton()) return;
-        await interaction.reply({embeds: [loading], ephemeral: true});
+    client.on('interactionCreate', async (interaction) => {
+        if (!interaction.isButton()) return;
+        await interaction.reply({ embeds: [loading], ephemeral: true });
         const type = await getType(interaction);
-        if(type) {
-            await interaction.editReply({embeds: [loadingTicket], ephemeral: true});
+        if (type) {
+            await interaction.editReply({ embeds: [loadingTicket], ephemeral: true });
             const { tooMuchOfType, typeChannelID } = await amountOfTypes(interaction.user.id, interaction.customId);
-            if(tooMuchOfType) {
+            if (tooMuchOfType) {
                 const typeAlreadyExists = new MessageEmbed()
                     .setColor('FF0000')
                     .setAuthor('Ticket Already Exists!')
                     .setDescription(`${interaction.member}, Your Already Have A ${type.name} Ticket Open At <#${typeChannelID}>.`)
                     .setTimestamp();
-                await interaction.editReply({embeds: [typeAlreadyExists], ephemeral: true});
+                await interaction.editReply({ embeds: [typeAlreadyExists], ephemeral: true });
                 return;
             }
             const ticketCreated = new MessageEmbed()
@@ -155,23 +148,23 @@ module.exports = async (client) => {
                 permissionOverwrites: [
                     {
                         allow: 'VIEW_CHANNEL',
-                        id: interaction.user.id,
+                        id: interaction.user.id
                     },
                     {
                         deny: 'VIEW_CHANNEL',
-                        id: guild.id,
-                    },
+                        id: guild.id
+                    }
                 ],
-                reason: `Ticket Created By ${interaction.member}`,
+                reason: `Ticket Created By ${interaction.member}`
             }).then(async (channel) => {
                 await ticketCreated.setDescription(`${interaction.member}, Your ${type.name} Ticket Is Open At ${channel}.`);
-                await interaction.editReply({embeds: [ticketCreated], ephemeral: true});
+                await interaction.editReply({ embeds: [ticketCreated], ephemeral: true });
 
                 for (const roleID in type.allowedRoles) {
                     const role = await interaction.guild.roles.cache.find(role => role.id === type.allowedRoles[roleID]);
                     if (role) {
                         channel.permissionOverwrites.edit(role, {
-                            VIEW_CHANNEL: true,
+                            VIEW_CHANNEL: true
                         });
                     }
                     const message1 = await channel.send('<@' + role + '>');
@@ -181,22 +174,21 @@ module.exports = async (client) => {
                     const member = interaction.guild.members.cache.get(type.allowedPeople[memberID]);
                     if (member) {
                         channel.permissionOverwrites.edit(member, {
-                            VIEW_CHANNEL: true,
+                            VIEW_CHANNEL: true
                         });
                     }
                     const message2 = await channel.send('<@' + member + '>');
                     message2.delete();
                 }
-                try{
-                    new tiecketSchema({
+                try {
+                    new TiecketSchema({
                         userId: interaction.user.id,
                         guildId: interaction.guild.id,
                         type: interaction.customId,
                         channelID: channel.id,
-                        current: true,
+                        current: true
                     }).save();
-                }
-                catch(err) {
+                } catch (err) {
                     console.error('Erro while adding the ticket to database: ' + err);
                     const messageDelete = new MessageEmbed()
                         .setColor('FF0000')
@@ -207,73 +199,70 @@ module.exports = async (client) => {
                     client.channels.cache.get(config.logging.errorChannel).send(messageDelete);
                     return;
                 }
-                const date = new Date()
-                console.log(type.application)
+                const date = new Date();
+                console.log(type.application);
                 const ticketEmbed = await new MessageEmbed()
                     .setColor('#297fd6')
                     .setTitle(type.name + ' Ticket')
                     .addField('Time Application Opened:', date.toLocaleString())
                     .setFooter(`${type.name} - These messages will be logged.`)
                     .setTimestamp();
-                if(type.application) {
-                    ticketEmbed.setDescription(`>>> ${interaction.member}, thank you for opening an application! \n\n **Please fill this form: ${type.application}** \n\n A member of our leadership team will review it at their earliest convenience.`)
+                if (type.application) {
+                    ticketEmbed.setDescription(`>>> ${interaction.member}, thank you for opening an application! \n\n **Please fill this form: ${type.application}** \n\n A member of our leadership team will review it at their earliest convenience.`);
                 } else {
-                    ticketEmbed.setDescription(`${interaction.member}, thank you for opening a ticket. Our support team will be with you as soon as they can.`)
+                    ticketEmbed.setDescription(`${interaction.member}, thank you for opening a ticket. Our support team will be with you as soon as they can.`);
                 }
-                channel.send({embeds: [ticketEmbed], components: [closeButton]});
-                const message3 = await channel.send({content: `Ticktet created ${interaction.member}`});
+                channel.send({ embeds: [ticketEmbed], components: [closeButton] });
+                const message3 = await channel.send({ content: `Ticktet created ${interaction.member}` });
                 message3.delete();
             }).catch(err => {
-                if (err.message.includes("Maximum number of channels in category reached (50)")) {
-                    interaction.channel.send('Please contact someone from the support team. There are too many channels in the Ticket category!')
+                if (err.message.includes('Maximum number of channels in category reached (50)')) {
+                    interaction.channel.send('Please contact someone from the support team. There are too many channels in the Ticket category!');
                 }
             });
-        }
-        else if(interaction.customId === 'lock!ticket' && interaction.channel.name.includes('ticket')) {
-            const channelDB = await tiecketSchema.findOne({ channelID: interaction.channel.id });
-            if(channelDB) {
-                await interaction.editReply({embeds: [closingTicket], ephemeral: true});
+        } else if (interaction.customId === 'lock!ticket' && interaction.channel.name.includes('ticket')) {
+            const channelDB = await TiecketSchema.findOne({ channelID: interaction.channel.id });
+            if (channelDB) {
+                await interaction.editReply({ embeds: [closingTicket], ephemeral: true });
                 const getSameEmbed = interaction.message.embeds[0];
-                await interaction.message.edit({embeds: [getSameEmbed], components: [closeButtonDisabled]});
+                await interaction.message.edit({ embeds: [getSameEmbed], components: [closeButtonDisabled] });
                 const closedAt = new Date();
-                if(channelDB) {
+                if (channelDB) {
                     const embed = new MessageEmbed()
                         .setColor('FF0000')
                         .setTitle(`${interaction.user.username} has closed this ticket.`)
                         .setDescription('Ticket will be deleted in 24 hours from this message being sent.\nIf you wish to keep this ticket open click the 📌 button below.\nYou can also delete the ticket now by clicking the 🔐 button below.');
-                    interaction.message.channel.send({embeds: [embed], components: [ticketKeepDeleteRow]});
+                    interaction.message.channel.send({ embeds: [embed], components: [ticketKeepDeleteRow] });
                     const ts = closedAt.getTime();
                     const toClose = ts + (1000 * 60 * 60 * 24);
                     try {
-                        tiecketSchema.findOneAndUpdate({ channelID: interaction.channel.id }, { expires: toClose, current: false, keep: false }, async (err, data) => {
-                            if(data) {
+                        TiecketSchema.findOneAndUpdate({ channelID: interaction.channel.id }, { expires: toClose, current: false, keep: false }, async (_err, data) => {
+                            if (data) {
                                 interaction.channel.lockPermissions();
                             }
                         });
-                    }
-                    catch(e) {
+                    } catch (e) {
                         console.error(e);
                     }
                 }
             }
-        }
-        else if(interaction.customId === 'delete!ticket' && interaction.channel.name.includes('ticket')) {
-            await interaction.editReply({embeds: [deletingTicket], ephemeral: true});
+        } else if (interaction.customId === 'delete!ticket' && interaction.channel.name.includes('ticket')) {
+            await interaction.editReply({ embeds: [deletingTicket], ephemeral: true });
             const conditional = {
                 channelID: interaction.channel.id,
-                current: false,
+                current: false
             };
             // Gives the info intself from the constant above
-            const results = await tiecketSchema.findOne(conditional);
+            const results = await TiecketSchema.findOne(conditional);
             if (results) {
                 const guild = client.guilds.cache.get(results.guildId);
                 const channel = guild.channels.cache.find(r => r.id === results.channelID);
-                if(channel) {
+                if (channel) {
                     await interaction.channel.messages.fetch({ limit: 100 }).then(async (messages) => {
                         // Iterate through the messages here with the variable "messages".
-                        const guild = {name: interaction.guild.name, iconURL: function() {return interaction.guild.icon;}}
-                        const channel = {name: interaction.channel.name}
-                        const date = new Date()
+                        const guild = { name: interaction.guild.name, iconURL: function () { return interaction.guild.icon; } };
+                        const channel = { name: interaction.channel.name };
+                        const date = new Date();
                         const logDelete = new MessageEmbed()
                             .setColor('FF0000')
                             .setTitle('Ticket Deleted!')
@@ -283,43 +272,40 @@ module.exports = async (client) => {
                             .setTimestamp()
                             .setFooter('Time message deleted  ', client.user.displayAvatarURL());
                         await generateTranscript(guild, channel, messages).then(async (url) => {
-                            const file = await new MessageAttachment(url, 'messageLog.html')
-                            await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [logDelete], files: [ file ]}).catch(console.error())
+                            const file = await new MessageAttachment(url, 'messageLog.html');
+                            await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [logDelete], files: [file] }).catch(console.error());
                         });
                     });
                     channel.delete('Ticket Closed');
                 }
-                await tiecketSchema.findOneAndDelete(conditional, async (err, data) => {
-                    if(data) console.log('Deleted an old ticket channel.');
+                await TiecketSchema.findOneAndDelete(conditional, async (_err, data) => {
+                    if (data) console.log('Deleted an old ticket channel.');
                 });
             }
-        }
-        else if(interaction.customId === 'keep!ticket' && interaction.channel.name.includes('ticket')) {
-            await interaction.editReply({embeds: [keepingTicket], ephemeral: true});
+        } else if (interaction.customId === 'keep!ticket' && interaction.channel.name.includes('ticket')) {
+            await interaction.editReply({ embeds: [keepingTicket], ephemeral: true });
             const getSameEmbed = interaction.message.embeds[0];
-            await interaction.message.edit({embeds: [getSameEmbed], components: [ticketKeepDeleteRowDisabled]});
+            await interaction.message.edit({ embeds: [getSameEmbed], components: [ticketKeepDeleteRowDisabled] });
             const conditional = {
                 channelID: interaction.channel.id,
-                current: false,
+                current: false
             };
             // Gives the info intself from the constant above
-            const results = await tiecketSchema.findOne(conditional);
+            const results = await TiecketSchema.findOne(conditional);
             // If returns true (ticket should be deleted)
             console.log(results);
             if (results) {
                 try {
-                    await tiecketSchema.findOneAndUpdate(conditional, { keep: true }, async (err, data) => {
-                        if(data) {
-                            await interaction.editReply({embeds: [ticketWillBeKept], ephemeral: true});
+                    await TiecketSchema.findOneAndUpdate(conditional, { keep: true }, async (_err, data) => {
+                        if (data) {
+                            await interaction.editReply({ embeds: [ticketWillBeKept], ephemeral: true });
                             await ticketWillBeKept.setDescription(`This ticket will be kept as requested by ${interaction.member}.\nTo delete this ticket press the 🔐 button below.`);
-                            await interaction.channel.send({embeds: [ticketWillBeKept], components: [deleteButton]});
+                            await interaction.channel.send({ embeds: [ticketWillBeKept], components: [deleteButton] });
                         }
                     });
-                }
-                catch(e) {
+                } catch (e) {
                     console.error(e);
                 }
-
             }
         }
     });
@@ -329,5 +315,5 @@ module.exports.config = {
     displayName: 'Ticket',
     dbName: 'TEST',
     // Wait for the database connection to be present
-    loadDBFirst: true,
+    loadDBFirst: true
 };
