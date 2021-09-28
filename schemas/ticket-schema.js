@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const reqString = {
     type: String,
-    required: true,
+    required: true
 };
 
 const tiecketSchema = mongoose.Schema(
@@ -13,20 +13,20 @@ const tiecketSchema = mongoose.Schema(
         channelID: reqString,
         expires: {
             type: Date,
-            required: false,
+            required: false
         },
         current: {
             type: Boolean,
-            required: true,
+            required: true
         },
         keep: {
             type: Boolean,
-            required: false,
-        },
+            required: false
+        }
     },
     {
-        timestamps: true,
-    },
+        timestamps: true
+    }
 );
 
 module.exports = mongoose.model('tickets', tiecketSchema);

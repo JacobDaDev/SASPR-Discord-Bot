@@ -2,14 +2,14 @@ const mongoose = require('mongoose');
 
 const reqString = {
     type: String,
-    required: true,
+    required: true
 };
 
 const tiecketSchema = mongoose.Schema(
     {
         ticketType: reqString,
-        msgID: reqString,
-    },
+        msgID: reqString
+    }
 );
 
 module.exports = mongoose.model('ticket-messages', tiecketSchema);

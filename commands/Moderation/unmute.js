@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-expressions */
 // Embeds again
 const { MessageEmbed } = require('discord.js');
 
@@ -7,7 +8,6 @@ const config = require('../../config/cfg');
 // Importing the mongoose schema for database
 const muteSchema = require('../../schemas/mute-schema');
 
-
 module.exports = {
     name: 'unmute',
     category: 'Moderation',
@@ -16,33 +16,33 @@ module.exports = {
     description: 'Unmute a member',
     options: [
         {
-            name: "Person",
-            description: "Person to unmute.",
-            type: "USER",
-            required: true,
-        },
+            name: 'Person',
+            description: 'Person to unmute.',
+            type: 'USER',
+            required: true
+        }
     ],
     callback: async ({ interaction, args, client }) => {
-        if(interaction) {
-            await interaction.reply({content: 'Loading...', ephemeral: true})
+        if (interaction) {
+            await interaction.reply({ content: 'Loading...', ephemeral: true });
 
-            const [ target ] = args
+            const [target] = args;
             // Mute role name.
             const mutedRoleConf = config.commandConfig.muteMember.muteRoleName;
             // Get the mute role.
             const muterole = interaction.guild.roles.cache.find(role => {
-                return role.name == mutedRoleConf;
+                return role.name === mutedRoleConf;
             });
-            
-            if(!interaction.member.permissions.has('ADMINISTRATOR' || 'MANAGE_ROLES')) {
-                if(!interaction.member.roles.cache.some(role => role.name === config.commandConfig.muteMember.allowedRoles ? config.commandConfig.muteMember.allowedRoles : config.commandConfig.modRoles)) {
+
+            if (!interaction.member.permissions.has('ADMINISTRATOR' || 'MANAGE_ROLES')) {
+                if (!interaction.member.roles.cache.some(role => role.name === config.commandConfig.muteMember.allowedRoles ? config.commandConfig.muteMember.allowedRoles : config.commandConfig.modRoles)) {
                     const invalidPermEmbed = new MessageEmbed()
                         .setColor('FF0000')
                         .setTitle('Invalid Permissions!')
                         .setDescription(`${interaction.member} You don't have the required permissions to use this command.`)
                         .setTimestamp()
                         .setFooter(interaction.guild.name, client.user.displayAvatarURL());
-                    await interaction.editReply({embeds: [invalidPermEmbed]}).catch((err) => {
+                    await interaction.editReply({ embeds: [invalidPermEmbed] }).catch((err) => {
                         console.error('Error while deleting interaction: ' + err);
                         const messageDelete = new MessageEmbed()
                             .setColor('FF0000')
@@ -72,14 +72,14 @@ module.exports = {
             const targetMember = interaction.guild.members.cache.get(target);
 
             // If member not found
-            if(!targetMember) {
+            if (!targetMember) {
                 const noTargetFoundEmbed = new MessageEmbed()
                     .setColor('FF0000')
                     .setTitle('He isn\'t in this guild.')
                     .setDescription(`${interaction.member} The person you tried to unmute isn't in this guild.`)
                     .setTimestamp()
                     .setFooter(interaction.guild.name, client.user.displayAvatarURL());
-                await interaction.editReply({embeds: [noTargetFoundEmbed]}).catch((err) => {
+                await interaction.editReply({ embeds: [noTargetFoundEmbed] }).catch((err) => {
                     console.error('Error while deleting interaction: ' + err);
                     const messageDelete = new MessageEmbed()
                         .setColor('FF0000')
@@ -92,14 +92,14 @@ module.exports = {
                 return;
             }
             // If a person tries to unmute themself.
-            if(interaction.member.id == target) {
+            if (interaction.member.id === target) {
                 const thatsYouEmbed = new MessageEmbed()
                     .setColor('FF0000')
                     .setTitle('You can\'t unmute yourself')
                     .setDescription(`${interaction.member} I won't let you unmute yourself...`)
                     .setTimestamp()
                     .setFooter(interaction.guild.name, client.user.displayAvatarURL());
-                await interaction.editReply({embeds: [thatsYouEmbed]}).catch((err) => {
+                await interaction.editReply({ embeds: [thatsYouEmbed] }).catch((err) => {
                     console.error('Error while deleting interaction: ' + err);
                     const messageDelete = new MessageEmbed()
                         .setColor('FF0000')
@@ -116,9 +116,9 @@ module.exports = {
             const results = await muteSchema.updateMany({
                 guildId: interaction.guild.id,
                 userId: target,
-                current: true,
+                current: true
             }, {
-                current: false,
+                current: false
             });
             const successEmbed = new MessageEmbed()
                 .setColor('FF0000')
@@ -138,16 +138,14 @@ module.exports = {
                 .setTimestamp()
                 .setFooter(`${interaction.guild.name}`, client.user.displayAvatarURL());
 
-
             const notMuted = new MessageEmbed()
                 .setColor('FF0000')
                 .setTitle('You can\'t unmute someone that\'s not muted.')
                 .setDescription(`${interaction.member} I cannot unmute someone that is not currently muted...`)
                 .setTimestamp()
                 .setFooter(interaction.guild.name, client.user.displayAvatarURL());
-            if(!results) {
-
-                await interaction.editReply({embeds: [notMuted]}).catch((err) => {
+            if (!results) {
+                await interaction.editReply({ embeds: [notMuted] }).catch((err) => {
                     console.error('Error while deleting interaction: ' + err);
                     const messageDelete = new MessageEmbed()
                         .setColor('FF0000')
@@ -159,12 +157,11 @@ module.exports = {
                 });
                 return;
             }
-            if(results.nModified === 1 || targetMember.roles.cache.has(muterole.id)) {
-                if(muterole) {
+            if (results.nModified === 1 || targetMember.roles.cache.has(muterole.id)) {
+                if (muterole) {
                     try {
                         targetMember.roles.remove(muterole);
-                    }
-                    catch(err) {
+                    } catch (err) {
                         console.error('Error while adding roles: ' + err);
                         const messageDelete = new MessageEmbed()
                             .setColor('FF0000')
@@ -176,9 +173,9 @@ module.exports = {
                         return;
                     }
                     // Send the success embed
-                    await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [logMuteEmbed]});
+                    await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [logMuteEmbed] });
 
-                    await interaction.editReply({embeds: [successEmbed], content: "Done."}).catch((err) => {
+                    await interaction.editReply({ embeds: [successEmbed], content: 'Done.' }).catch((err) => {
                         console.error('Error while deleting interaction: ' + err);
                         const messageDelete = new MessageEmbed()
                             .setColor('FF0000')
@@ -188,11 +185,9 @@ module.exports = {
                             .setFooter('Time error occured  ', client.user.displayAvatarURL());
                         client.channels.cache.get(config.logging.errorChannel).send(messageDelete);
                     });
-
                 }
-            }
-            else {
-                await interaction.editReply({embeds: [notMuted]}).catch((err) => {
+            } else {
+                await interaction.editReply({ embeds: [notMuted] }).catch((err) => {
                     console.error('Error while deleting interaction: ' + err);
                     const messageDelete = new MessageEmbed()
                         .setColor('FF0000')
@@ -204,12 +199,11 @@ module.exports = {
                 });
             }
         }
-    },
+    }
 
-
-},
+};
 module.exports.config = {
     displayName: 'Unmute',
     dbName: 'UNMUTE',
-    loadDBFirst: true,
+    loadDBFirst: true
 };
