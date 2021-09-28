@@ -163,7 +163,7 @@ module.exports = async (client) => {
                 for (const roleID in type.allowedRoles) {
                     const role = await interaction.guild.roles.cache.find(role => role.id === type.allowedRoles[roleID]);
                     if (role) {
-                        channel.permissionOverwrites.edit(role, {
+                        await channel.permissionOverwrites.edit(role, {
                             VIEW_CHANNEL: true
                         });
                     }
@@ -173,7 +173,7 @@ module.exports = async (client) => {
                 for (const memberID in type.allowedPeople) {
                     const member = interaction.guild.members.cache.get(type.allowedPeople[memberID]);
                     if (member) {
-                        channel.permissionOverwrites.edit(member, {
+                        await channel.permissionOverwrites.edit(member, {
                             VIEW_CHANNEL: true
                         });
                     }
