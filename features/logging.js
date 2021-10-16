@@ -79,7 +79,7 @@ module.exports = (client) => {
             } else {
                 messageDelete.addField('Message deleted by user ID:', 'Unknown');
             }
-            await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [messageDelete] });
+            await client.channels.cache.get(config.logging.messageLoggingChannel).send({ embeds: [messageDelete] });
         } else {
             if (!message.guild) return;
             if (!message.author.bot) {
@@ -121,7 +121,7 @@ module.exports = (client) => {
                 } else {
                     messageDelete.addField('Message deleted by user ID:', 'Unknown');
                 }
-                await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [messageDelete] });
+                await client.channels.cache.get(config.logging.messageLoggingChannel).send({ embeds: [messageDelete] });
             }
         }
     });
@@ -146,7 +146,7 @@ module.exports = (client) => {
                 .addField('Message ID:', `${newMessage.id}`)
                 .setTimestamp()
                 .setFooter('Time message edited  ', client.user.displayAvatarURL());
-            await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [messageEdit] });
+            await client.channels.cache.get(config.logging.messageLoggingChannel).send({ embeds: [messageEdit] });
         }
     });
 
