@@ -79,7 +79,7 @@ module.exports = (client) => {
             } else {
                 messageDelete.addField('Message deleted by user ID:', 'Unknown');
             }
-            await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [messageDelete] });
+            await client.channels.cache.get(config.logging.messageLoggingChannel).send({ embeds: [messageDelete] });
         } else {
             if (!message.guild) return;
             if (!message.author.bot) {
@@ -114,6 +114,7 @@ module.exports = (client) => {
                     .addField('Message by:', `${message.author}`)
                     .addField('Message content:', `${message.content}`)
                     .addField('Message deleted by:', `${executor}`)
+                    .addField('Channel name:', `${message.channel.name} (<#${message.channel.id}>)`)
                     .setTimestamp()
                     .setFooter('Time message deleted  ', client.user.displayAvatarURL());
                 if (executor !== 'Unknown, most likely deleted by bot.') {
@@ -121,7 +122,7 @@ module.exports = (client) => {
                 } else {
                     messageDelete.addField('Message deleted by user ID:', 'Unknown');
                 }
-                await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [messageDelete] });
+                await client.channels.cache.get(config.logging.messageLoggingChannel).send({ embeds: [messageDelete] });
             }
         }
     });
@@ -144,9 +145,10 @@ module.exports = (client) => {
                 .addField('Message content before:', `${oldMessage.content}`)
                 .addField('Message content now:', `${newMessage.content}`)
                 .addField('Message ID:', `${newMessage.id}`)
+                .addField('Channel name:', `${oldMessage.channel.name} (<#${oldMessage.channel.id}>)`)
                 .setTimestamp()
                 .setFooter('Time message edited  ', client.user.displayAvatarURL());
-            await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [messageEdit] });
+            await client.channels.cache.get(config.logging.messageLoggingChannel).send({ embeds: [messageEdit] });
         }
     });
 
