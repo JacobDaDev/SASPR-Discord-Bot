@@ -73,6 +73,14 @@ module.exports = {
             await interaction.channel.send({ embeds: [embed] });
             await interaction.guild.members.fetch(channelDB.userId);
             const member = await interaction.guild.members.cache.find(member => member.id === channelDB.userId);
+            if (!member) {
+                const noMember = new MessageEmbed()
+                    .setColor('RED')
+                    .setTitle('Member is not in this server!')
+                    .setDescription('Member has left the server.');
+                await interaction.editReply({ content: 'FAILED.', embeds: [noMember], ephemeral: true });
+                return;
+            }
             const response = new MessageEmbed()
                 .setColor('#FF0000')
                 .setAuthor(`${member.user.username}`)
