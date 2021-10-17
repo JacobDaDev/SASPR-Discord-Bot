@@ -130,6 +130,7 @@ module.exports = (client) => {
     // Message update log
     client.on('messageUpdate', async (oldMessage, newMessage) => {
         if (oldMessage.channel.type === 'dm') return;
+        if (oldMessage.content === newMessage.content) return;
         if (newMessage.partial || oldMessage.partial) {
             await newMessage.fetch().then((msg) => {
                 console.log(msg);
