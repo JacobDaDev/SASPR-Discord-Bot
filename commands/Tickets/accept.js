@@ -51,6 +51,14 @@ module.exports = {
             const department = type.name;
             await interaction.guild.members.fetch(channelDB.userId);
             const member = await interaction.guild.members.cache.find(member => member.id === channelDB.userId);
+            if (!member) {
+                const noMember = new MessageEmbed()
+                    .setColor('RED')
+                    .setTitle('Member is not in this server!')
+                    .setDescription('Member has left the server.');
+                await interaction.editReply({ content: 'FAILED.', embeds: [noMember], ephemeral: true });
+                return;
+            }
             for (const roleID in type.rolesToGive) {
                 const role = await interaction.guild.roles.cache.find(role => role.id === type.rolesToGive[roleID]);
                 if (role && member) {
