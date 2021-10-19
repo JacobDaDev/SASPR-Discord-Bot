@@ -77,20 +77,22 @@ module.exports = (client) => {
     });
     // Making sure people don't try to bypass it by leaving and joining back
     client.on('guildMemberAdd', async (member) => {
-        const { guild, id } = member;
+        const { guild } = member;
+        checkMutes();
         // Getting data from db about the user
         const currentMute = await muteSchema.findOne({
-            userId: id,
+            userId: member.id,
             guildId: guild.id,
             current: true
         });
         // If data returns true (user should still be muted)
         if (currentMute) {
+            console.log('Is muted');
             // Get the muted role
             const rolem = guild.roles.cache.find((role) => {
                 return role.name === mutedRoleConf;
             });
-
+            console.log(rolem);
             if (rolem) {
                 member.roles.add(rolem);
             }

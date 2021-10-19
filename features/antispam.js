@@ -174,7 +174,11 @@ module.exports = (client) => {
                     if (message.partial) {
                         message.fetch();
                     }
-                    member.send(`Do not try to advertise in ${guild.name}.`);
+                    try {
+                        member.send(`Do not try to advertise in ${guild.name}.`);
+                    } catch {
+                        console.log('Couldn\'t send DM.');
+                    }
                     const triedAdLog = new MessageEmbed()
                         .setColor('FF0000')
                         .setTitle('Member tried to send an invite to another discord!')
