@@ -63,7 +63,6 @@ module.exports = (client) => {
             message.delete();
         }
         if (words.some(w => message.content.toLowerCase().includes(w))) {
-            console.log('Bad word detected!');
             const successEmbed = new MessageEmbed()
                 .setColor('FF0000')
                 .setTitle(`${member.user.username} has been muted for saying a bad word!`)
@@ -173,7 +172,6 @@ module.exports = (client) => {
             if (!isOurInvite && !allowedInvite) {
                 if (!member.roles.cache.has(bypassRoles) || !member.id === bypassMembers) {
                     if (message.partial) {
-                        console.log('LOL IT\'S A PARTIAL!!!');
                         message.fetch();
                     }
                     member.send(`Do not try to advertise in ${guild.name}.`);
@@ -196,7 +194,6 @@ module.exports = (client) => {
             const userData = userMap.get(message.author.id);
             let msgCount = userData.msgCount;
             if (msgCount >= config.antiAdSpam.messagesBeforeWarn) {
-                console.log('Over the limit!');
                 if (!member.roles.cache.has(bypassRoles) || !member.id === bypassMembers) {
                     exportFuctions.warn(member, 'Spamming.', message, client);
                     message.delete();
@@ -207,7 +204,6 @@ module.exports = (client) => {
                 userMap.set(message.author.id, userData);
             }
         } else {
-            console.log('Not on map');
             userMap.set(message.author.id, {
                 msgCount: 1,
                 lastMassage: message,
