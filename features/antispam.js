@@ -14,6 +14,7 @@ const config = require('../config/cfg');
 
 module.exports = (client) => {
     const isAllowed = async (message) => {
+        if (message.channel.id === config.antiAdSpam.allowedChannel) return true;
         for (const roleID in config.antiAdSpam.bypassRoles) {
             if (message.member.roles.cache.find(role => role.id === config.antiAdSpam.bypassRoles[roleID])) {
                 return true;
