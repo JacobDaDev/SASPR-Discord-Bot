@@ -1,6 +1,6 @@
 // Ticket schema, database info
-const tiecketSchema = require('../schemas/ticket-schema');
-const TiecketMsgSchema = require('../schemas/ticket-message-schema');
+const ticketDB = require('../schemas/tickets.json');
+const msgDB = require('../schemas/messages.json');
 
 // Get the config so we can get the correct muted role
 const config = require('../config/cfg');
@@ -11,24 +11,26 @@ const { MessageEmbed, MessageButton, MessageActionRow } = require('discord.js');
 module.exports = async (client) => {
     const getMessageID = async (_type, channelID) => {
         let messageID;
-        const DBMatches = (await TiecketMsgSchema.find({ ticketType: _type }));
-        console.log(DBMatches.length);
+        const DBMatches = msgDB[_type];
         const channel = client.channels.cache.get(channelID);
         if (DBMatches.length > 0) {
             if (DBMatches.length > 1) {
                 for (const index in DBMatches) {
-                    const msgID = DBMatches[index].msgID;
+                    const msgID = DBMatches[index].messageId;
                     try {
                         await channel.messages.fetch(msgID);
                         messageID = msgID;
                     } catch (err) {
-                        TiecketMsgSchema.findOneAndDelete({ ticketType: _type, msgID: msgID }, async (_err, data) => {
-                            if (data) console.log('Deleted an old ticket message.');
-                        });
+                        delete msgDB[_type][index]
                     }
                 }
             } else {
-                messageID = DBMatches[0].msgID;
+                messageID = DBMatches[0].messageId;
+                try {
+                    await channel.messages.fetch(messageID);
+                } catch (err) {
+                    delete msgDB[_type]
+                }
             }
         }
         return { messageID, channel };
@@ -37,7 +39,6 @@ module.exports = async (client) => {
         const channelID = config.tickets.differentTypes[type].createTicketChannel;
         const { messageID, channel } = await getMessageID(type, channelID);
         if (messageID !== undefined) {
-            console.log(messageID);
             channel.messages.fetch(messageID).catch(async () => {
                 const ticketEmbed = new MessageEmbed()
                     .setColor('#297fd6')
@@ -53,10 +54,12 @@ module.exports = async (client) => {
                     .addComponents(buttonButton);
                 channel.send({ embeds: [ticketEmbed], components: [button] }).then((message) => {
                     try {
-                        new TiecketMsgSchema({
-                            ticketType: type,
-                            msgID: message.id
-                        }).save();
+                        msgDB[type] = {
+                            messageId = message.id
+                        }
+                        fs.writeFile('../schemas/messages.json', JSON.stringify(msgDB), (err) => {
+                            if (err) console.error(err);
+                        });
                     } catch (err) {
                         console.error('Erro while adding the ticket to database: ' + err);
                         const messageDelete = new MessageEmbed()
@@ -70,7 +73,6 @@ module.exports = async (client) => {
                 });
             });
         } else {
-            console.log(messageID);
             const ticketEmbed = new MessageEmbed()
                 .setColor('#297fd6')
                 .setTitle(`Create A ${config.tickets.differentTypes[type].name} Ticket`)
@@ -86,10 +88,12 @@ module.exports = async (client) => {
 
             channel.send({ embeds: [ticketEmbed], components: [button] }).then((message) => {
                 try {
-                    new TiecketMsgSchema({
-                        ticketType: type,
-                        msgID: message.id
-                    }).save();
+                    msgDB[type] = {
+                        messageId = message.id
+                    }
+                    fs.writeFile('../schemas/messages.json', JSON.stringify(msgDB), (err) => {
+                        if (err) console.error(err);
+                    });
                 } catch (err) {
                     console.error('Erro while adding the ticket to database: ' + err);
                     const messageDelete = new MessageEmbed()
@@ -103,106 +107,74 @@ module.exports = async (client) => {
             });
         }
     }
-    const button = await new MessageActionRow();
-    const buttons = [];
     for (const type in config.applications.differentTypes) {
-        const buttonButton = await new MessageButton()
-            .setStyle('PRIMARY')
-            .setLabel(`Create A ${config.applications.differentTypes[type].name}!`)
-            .setEmoji(config.applications.differentTypes[type].Emoji, false)
-            .setCustomId(type);
-        buttons.push(buttonButton);
-    }
-    button.addComponents(buttons);
-
-    const channelID = config.applications.createTicketChannel;
-    const { messageID, channel } = await getMessageID('applications', channelID);
-    if (messageID !== undefined) {
-        console.log(messageID);
-        channel.messages.fetch(messageID).catch(async () => {
-            const ticketEmbed = new MessageEmbed()
-                .setColor('#297fd6')
-                .setTitle('Department Applications')
-                .setDescription('Create an Application By Clicking the Correct Button Below!')
-                .setFooter('All Of The Messages Sent In A Ticket Will Be Logged.', client.user.displayAvatarURL());
-            channel.send({ embeds: [ticketEmbed], components: [button] }).then((message) => {
-                try {
-                    new TiecketMsgSchema({
-                        ticketType: 'applications',
-                        msgID: message.id
-                    }).save();
-                } catch (err) {
-                    console.error('Erro while adding the ticket to database: ' + err);
-                    const messageDelete = new MessageEmbed()
-                        .setColor('FF0000')
-                        .setTitle('ERROR!')
-                        .addField('Error while adding the ticket to database:', `${err}`)
-                        .setTimestamp()
-                        .setFooter('Time error occured  ', client.user.displayAvatarURL());
-                    client.channels.cache.get(config.logging.errorChannel).send(messageDelete);
+        const channelId = config.applications.differentTypes[type].createTicketChannel
+        const sendChannel = guild.channels.cache.find(r => r.id === channelId);
+        const messageID = await msgDB[type].messageId;
+        await sendChannel.messages.fetch(messageID).catch(async () => {
+            // NOT FOUND
+            const embed = new MessageEmbed()
+                .setColor(config.applications.differentTypes[type].embed.color)
+                .setTitle(config.applications.differentTypes[type].embed.title)
+                .setDescription(config.applications.differentTypes[type].description)
+                .setImage(config.applications.differentTypes[type].embed.image)
+                .setFields(config.applications.differentTypes[type].embed.fields)
+                .setTimestamp()
+                .setFooter(config.applications.differentTypes[type].embed.title, client.user.displayAvatarURL())
+    
+            const buttonButton = await new MessageButton()
+                .setStyle('PRIMARY')
+                .setLabel(`Create An Application!`)
+                .setEmoji(config.applications.differentTypes[type].Emoji, false)
+                .setCustomId(type);
+            const button = await new MessageActionRow()
+                .addComponents(buttonButton);
+    
+            await sendChannel.send({ embeds: [embed], components: [button]}).then(async (message) => {
+                msgDB[type] = {
+                    messageId = message.id
                 }
-            });
-        });
-    } else {
-        console.log(messageID);
-        const ticketEmbed = new MessageEmbed()
-            .setColor('#297fd6')
-            .setTitle('Department Applications')
-            .setDescription('Create an Application By Clicking the Correct Button Below!')
-            .setFooter('All Of The Messages Sent In A Ticket Will Be Logged.', client.user.displayAvatarURL());
-        channel.send({ embeds: [ticketEmbed], components: [button] }).then((message) => {
-            try {
-                new TiecketMsgSchema({
-                    ticketType: 'applications',
-                    msgID: message.id
-                }).save();
-            } catch (err) {
-                console.error('Erro while adding the ticket to database: ' + err);
-                const messageDelete = new MessageEmbed()
-                    .setColor('FF0000')
-                    .setTitle('ERROR!')
-                    .addField('Error while adding the ticket to database:', `${err}`)
-                    .setTimestamp()
-                    .setFooter('Time error occured  ', client.user.displayAvatarURL());
-                client.channels.cache.get(config.logging.errorChannel).send(messageDelete);
-            }
-        });
+                fs.writeFile('../schemas/tickets.json', JSON.stringify(msgDB), (err) => {
+                    if (err) console.error(err);
+                });
+            })
+        })
     }
 
     const checkTickets = async () => {
         // Current date
         const now = new Date();
+        
+        const results = [];
         // Get info wether or not the ticket is expired
-        const conditional = {
-            expires: {
-                $lt: now
-            },
-            current: false,
-            keep: false
-        };
-        // Gives the info intself from the constant above
-        const results = await tiecketSchema.findOne(conditional);
-        // If returns true (ticket should be deleted)
-        console.log(results);
-        if (results) {
-            const guild = client.guilds.cache.get(results.guildId);
-            const channel = guild.channels.cache.find(r => r.id === results.channelID);
-            if (channel) {
-                channel.delete('Ticket Closed');
+        for (let member in ticketDB) {
+            for (let channelID in ticketDB[member]) {
+                if (ticketDB[member][channelID].expires == now && !ticketDB[member][channelID].current && !keep) {
+                    results.push(ticketDB[member][channelID]);
+                    delete ticketDB[member][channelID];
+                    fs.writeFile('../schemas/tickets.json', JSON.stringify(ticketDB), (err) => {
+                        if (err) console.error(err);
+                    });
+                }
             }
-            await tiecketSchema.findOneAndDelete(conditional, async (_err, data) => {
-                if (data) console.log('Deleted an old ticket channel.');
-            });
+        }
+        console.log(results)
+        // If returns true (ticket should be deleted)
+        if (results) {
+            for (let result in results) {
+                console.log(result)
+                const guild = client.guilds.cache.get(result.guildId);
+                const channel = guild.channels.cache.find(r => r.id === result);
+                if (channel) {
+                    channel.delete('Ticket Closed');
+                }
+            }
         }
     };
     // Make it run every 5 minutes
     setTimeout(checkTickets, 1000 * 60 * 5);
-    checkTickets();
     client.on('ready', async () => {
         // Check the mutes when client is ready
         checkTickets();
     });
-};
-module.exports.config = {
-    loadDBFirst: true
 };

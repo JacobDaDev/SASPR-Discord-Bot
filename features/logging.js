@@ -4,6 +4,9 @@ const Discord = require('discord.js');
 // Import the logging and client error channel
 const config = require('../config/cfg');
 
+// Users DB
+const usersDB = require('../schemas/users.json');
+
 module.exports = (client) => {
     client.on('error', async (error) => {
         console.error(error);
@@ -304,13 +307,12 @@ module.exports = (client) => {
         await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [banRemove] });
     });
 
-/*     // Invite tracking.
+    // Invite tracking.
     // Create a new map containing the invites.
     const guildInvites = new Map();
     // WHen invite created add it to the map.
     client.on('inviteCreate', async invite => guildInvites.set(invite.guild.id, await invite.guild.fetchInvites()));
     client.on('ready', () => {
-
         client.guilds.cache.forEach(guild => {
             guild.fetchInvites()
                 .then(invites => guildInvites.set(guild.id, invites))
@@ -339,17 +341,48 @@ module.exports = (client) => {
                 .addField('Invite Link Used:', `${usedInvite.uses} times`)
                 .setTimestamp()
                 .setFooter('Time User Joined ', client.user.displayAvatarURL());
-            await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ logMemberAdd);
+            await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ logMemberAdd ]});
         }
         catch(err) {
-            console.log(err);
+            console.error(err);
         }
+        
+        usersDB[member.id] = {
+            invitedBy = `https://discord.gg/${usedInvite.code}`,
+            invitedUsed = usedInvite.inviter.id
+        }
+        fs.writeFile('../schemas/users.json', JSON.stringify(usersDB), (err) => {
+            if (err) console.error(err);
+        });
     });
- */
+    client.on('guildMemberRemove', async (member) => {
+        try {
+
+            const inviteUsed = userDB[member.id].invitedUsed
+            const inviteUser = userDB[member.id].invitedBy
+            const logMemberRemove = new Discord.MessageEmbed()
+                .setColor('ff0000')
+                .setTitle(`${member.user.username} Has Left The Server!`)
+                .addField('Member Tag: ', `${member.user.tag}`)
+                .addField('Member ID: ', `${member.id}`)
+                .addField('Member Created At:', member.createdAt)
+                .addField('Member Joined At:', member.joinedAt)
+                .addField('Invited By:', `<@${inviteUser}>\n(${inviteUser})`)
+                .addField('Invite Link:', `https://discord.gg/${inviteUsed}`)
+                .setTimestamp()
+                .setFooter('Time User Left ', client.user.displayAvatarURL());
+            await client.channels.cache.get(config.logging.loggingChannel).send({embeds: [ logMemberRemove ]});
+        }
+        catch(err) {
+            console.error(err);
+        }
+
+        delete usersDB[member.id];
+        fs.writeFile('../schemas/users.json', JSON.stringify(usersDB), (err) => {
+            if (err) console.error(err);
+        });
+    });
 };
 module.exports.config = {
     displayName: 'Logging',
-    dbName: 'TEST',
-    // Wait for the database connection to be present
-    loadDBFirst: true
 };

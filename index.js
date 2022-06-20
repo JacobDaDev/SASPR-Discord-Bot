@@ -8,7 +8,15 @@ const client = new Client({
     intents: [
         Intents.FLAGS.GUILDS,
         Intents.FLAGS.GUILD_MESSAGES,
-        Intents.FLAGS.GUILD_MESSAGE_REACTIONS
+        Intents.FLAGS.GUILD_PRESENCES,
+        Intents.FLAGS.DIRECT_MESSAGES,
+        Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
+        Intents.FLAGS.GUILD_MEMBERS,
+        Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
+        Intents.FLAGS.GUILD_WEBHOOKS,
+        Intents.FLAGS.GUILD_VOICE_STATES,
+        Intents.FLAGS.GUILD_INVITES,
+        Intents.FLAGS.GUILD_BANS
     ]
 });
 const config = require('./config/cfg');
@@ -34,9 +42,6 @@ const manager = new GiveawaysManager(client, {
 // We now have a giveawaysManager property to access the manager everywhere!
 client.giveawaysManager = manager;
 
-const mongoose = require('mongoose');
-mongoose.connect(config.settings.MONGO_URI, { useFindAndModify: false, useNewUrlParser: true, useUnifiedTopology: true });
-
 // when the client is restarted this will console log "Ready!" as well as creates a new client for WOKCommands
 client.once('ready', async () => {
     // Setting the bot activity
@@ -51,16 +56,7 @@ client.once('ready', async () => {
         featuresDir: path.join(__dirname, 'features'),
         testServers: '782325502974754866'
     })
-        .setMongoPath(config.settings.MONGO_URI)
-        .setDefaultPrefix(config.settings.prefix);
-    wok.on('databaseConnected', async (connection, state) => {
-        try {
-            console.log('The mongoose database connection is', chalk.bold(state.toUpperCase()));
-        } finally {
-            console.log(chalk.blue(`${client.user.username} is now`) + chalk.green.bold(' ONLINE ') + chalk.blue('and') + chalk.green.bold(' READY! '));
-            client.channels.cache.get(config.logging.loggingChannel).send('I\'m back online!');
-        }
-    });
+    console.log(chalk.blue(`${client.user.username} is now`) + chalk.green.bold(' ONLINE ') + chalk.blue('and') + chalk.green.bold(' READY! '));
 });
 
 // login to Discord

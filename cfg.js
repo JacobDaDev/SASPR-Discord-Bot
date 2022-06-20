@@ -10,8 +10,6 @@ module.exports = {
         prefix: '',
         // Your bot token, DO NOT SHOW THIS TO ANYONE!!!
         token: '',
-        // Your database URI.
-        MONGO_URI: '',
         // The guild ID.
         guildID: '',
         // The guild Icon.
@@ -61,12 +59,6 @@ module.exports = {
     commandConfig: {
         // Roles allowed to use ALL of the moderation commands, give their ID's.
         modRoles: '' || '' || '',
-        muteMember: {
-            // Roles allowed to add and remove roles, give the role ID's. Leave blank if you only want the mod roles to be able to use this.
-            allowedRoles: '' || '',
-            // Change this to anything you want, the bot will create the role for you.
-            muteRoleName: 'Muted'
-        },
         addRemoveRole: {
             // Roles allowed to add and remove roles, give the role ID's. Leave blank if you only want the mod roles to be able to use this.
             allowedRoles: '' || ''
@@ -109,20 +101,38 @@ module.exports = {
         }
     },
     applications: {
-        createTicketChannel: '',
         differentTypes: {
             example1: {
+                createTicketChannel: '',
                 name: '',
                 rolesToGive: [''],
                 application: '',
                 allowedRoles: [''],
                 responseChannel: '',
                 allowedPeople: [''],
-                TicketText: '',
                 createTo: '',
-                Emoji: ''
+                Emoji: '',
+                embed: {
+                    color: '',
+                    title: '',
+                    description: '',
+                    image: '',
+                    fields: [
+                        {
+                            name: '',
+                            value: '',
+                            inline: true
+                        },
+                        {
+                            name: '',
+                            value: '',
+                            inline: true
+                        },
+                    ]
+                }
             },
             example2: {
+                createTicketChannel: '',
                 name: '',
                 rolesToGive: ['', ''],
                 application: '',
@@ -131,7 +141,25 @@ module.exports = {
                 allowedPeople: [''],
                 TicketText: '',
                 createTo: '',
-                Emoji: ''
+                Emoji: '',
+                embed: {
+                    color: '',
+                    title: '',
+                    description: '',
+                    image: '',
+                    fields: [
+                        {
+                            name: '',
+                            value: '',
+                            inline: true
+                        },
+                        {
+                            name: '',
+                            value: '',
+                            inline: true
+                        },
+                    ]
+                }
             }
         }
     }

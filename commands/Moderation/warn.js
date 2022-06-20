@@ -198,6 +198,4 @@ module.exports = {
 
 module.exports.config = {
     displayName: 'Unmute',
-    dbName: 'UNMUTE',
-    loadDBFirst: true
 }; */

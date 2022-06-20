@@ -7,21 +7,19 @@ const { generateTranscript } = require('reconlx');
 // Incase of an error we need to get the error channel
 const config = require('../config/cfg');
 
-const TiecketSchema = require('../schemas/ticket-schema');
+const ticketDB = require('../schemas/tickets.json');
 
 const amountOfTypes = async (member, type) => {
-    console.log(member);
-    console.log(type);
-    const types = await TiecketSchema.find({
-        userId: member,
-        type: type,
-        current: true
-    });
     let tooMuchOfType = false;
     let typeChannelID;
-    if (types.length > 0) {
-        tooMuchOfType = true;
-        typeChannelID = await types[0].channelID;
+    if (ticketDB[memberID]) {
+        for (let channelID in ticketDB[member]) {
+            if (ticketDB[member][channelID].type == type && ticketDB[member][channelID].current) {
+                tooMuchOfType = true;
+                typeChannelID = channelID;
+                break;
+            }
+        }
     }
     return { tooMuchOfType, typeChannelID };
 };
@@ -60,11 +58,24 @@ const keepButtonButton = new MessageButton()
     .setEmoji('📌', false)
     .setCustomId('keep!ticket');
 
+const openButtonButton = new MessageButton()
+    .setStyle('SUCCESS')
+    .setLabel('To Open The Ticket Again Press Me.')
+    .setEmoji('📌', false)
+    .setCustomId('open!ticket');
+
 const keepButtonDisabledButton = new MessageButton()
     .setStyle('SUCCESS')
     .setLabel('To Keep The Ticket Press Me.')
     .setEmoji('📌', false)
     .setCustomId('keep!ticket')
+    .setDisabled(true);
+
+const openButtonDisabledButton = new MessageButton()
+    .setStyle('SUCCESS')
+    .setLabel('To Open The Ticket Again Press Me.')
+    .setEmoji('📌', false)
+    .setCustomId('open!ticket')
     .setDisabled(true);
 
 const deleteButtonDisabledButton = new MessageButton()
@@ -88,9 +99,9 @@ const deleteButton = new MessageActionRow()
 const closeButton = new MessageActionRow()
     .addComponents(closeButtonButton);
 const ticketKeepDeleteRow = new MessageActionRow()
-    .addComponents(deleteButtonButton, keepButtonButton);
+    .addComponents(deleteButtonButton, openButtonButton, keepButtonButton);
 const ticketKeepDeleteRowDisabled = new MessageActionRow()
-    .addComponents(deleteButtonDisabledButton, keepButtonDisabledButton);
+    .addComponents(deleteButtonDisabledButton, openButtonDisabledButton, keepButtonDisabledButton);
 
 module.exports = async (client) => {
     const loadingTicket = new MessageEmbed()
@@ -112,6 +123,14 @@ module.exports = async (client) => {
     const ticketWillBeKept = new MessageEmbed()
         .setColor('FF0000')
         .setAuthor('Ticket will now not be deleted!')
+        .setTimestamp();
+    const openTicket = new MessageEmbed()
+        .setColor('FF0000')
+        .setAuthor('Updating this ticket to open again, this should only take a few milliseconds!')
+        .setTimestamp();
+    const ticketOpened = new MessageEmbed()
+        .setColor('FF0000')
+        .setAuthor('Ticket is open again!')
         .setTimestamp();
     const loading = new MessageEmbed()
         .setColor('FF0000')
@@ -180,38 +199,24 @@ module.exports = async (client) => {
                     const message2 = await channel.send('<@' + member + '>');
                     message2.delete();
                 }
-                try {
-                    new TiecketSchema({
-                        userId: interaction.user.id,
-                        guildId: interaction.guild.id,
-                        type: interaction.customId,
-                        channelID: channel.id,
-                        current: true
-                    }).save();
-                } catch (err) {
-                    console.error('Erro while adding the ticket to database: ' + err);
-                    const messageDelete = new MessageEmbed()
-                        .setColor('FF0000')
-                        .setTitle('ERROR!')
-                        .addField('Error while adding the ticket to database:', `${err}`)
-                        .setTimestamp()
-                        .setFooter('Time error occured  ', client.user.displayAvatarURL());
-                    client.channels.cache.get(config.logging.errorChannel).send(messageDelete);
-                    return;
+                ticketDB[interaction.user.id][channel.id] = {
+                    type = interaction.customId,
+                    guildId = interaction.guild.id,
+                    current = true,
+                    keep = false,
+                    allowedMembers = channel.members
                 }
+                fs.writeFile('../schemas/tickets.json', JSON.stringify(ticketDB), (err) => {
+                    if (err) console.error(err);
+                });
                 const date = new Date();
-                console.log(type.application);
                 const ticketEmbed = await new MessageEmbed()
                     .setColor('#297fd6')
                     .setTitle(type.name + ' Ticket')
+                    .setDescription(`${interaction.member}, thank you for opening a ticket. Our support team will be with you as soon as they can.`)
                     .addField('Time Application Opened:', date.toLocaleString())
                     .setFooter(`${type.name} - These messages will be logged.`)
                     .setTimestamp();
-                if (type.application) {
-                    ticketEmbed.setDescription(`>>> ${interaction.member}, thank you for opening an application! \n\n **Please fill this form: ${type.application}** \n\n A member of our leadership team will review it at their earliest convenience.`);
-                } else {
-                    ticketEmbed.setDescription(`${interaction.member}, thank you for opening a ticket. Our support team will be with you as soon as they can.`);
-                }
                 channel.send({ embeds: [ticketEmbed], components: [closeButton] });
                 const message3 = await channel.send({ content: `Ticktet created ${interaction.member}` });
                 message3.delete();
@@ -221,91 +226,92 @@ module.exports = async (client) => {
                 }
             });
         } else if (interaction.customId === 'lock!ticket' && interaction.channel.name.includes('ticket')) {
-            const channelDB = await TiecketSchema.findOne({ channelID: interaction.channel.id });
+            let channelDB = ticketDB[memberID][interaction.channel.id];
+
             if (channelDB) {
                 await interaction.editReply({ embeds: [closingTicket], ephemeral: true });
                 const getSameEmbed = interaction.message.embeds[0];
                 await interaction.message.edit({ embeds: [getSameEmbed], components: [closeButtonDisabled] });
                 const closedAt = new Date();
-                if (channelDB) {
-                    const embed = new MessageEmbed()
-                        .setColor('FF0000')
-                        .setTitle(`${interaction.user.username} has closed this ticket.`)
-                        .setDescription('Ticket will be deleted in 24 hours from this message being sent.\nIf you wish to keep this ticket open click the 📌 button below.\nYou can also delete the ticket now by clicking the 🔐 button below.');
-                    interaction.message.channel.send({ embeds: [embed], components: [ticketKeepDeleteRow] });
-                    const ts = closedAt.getTime();
-                    const toClose = ts + (1000 * 60 * 60 * 24);
-                    try {
-                        TiecketSchema.findOneAndUpdate({ channelID: interaction.channel.id }, { expires: toClose, current: false, keep: false }, async (_err, data) => {
-                            if (data) {
-                                interaction.channel.lockPermissions();
-                            }
-                        });
-                    } catch (e) {
-                        console.error(e);
-                    }
+                const embed = new MessageEmbed()
+                    .setColor('FF0000')
+                    .setTitle(`${interaction.user.username} has closed this ticket.`)
+                    .setDescription('Ticket will be deleted in 24 hours from this message being sent.\nIf you wish to keep this ticket open click the 📌 button below.\nYou can also delete the ticket now by clicking the 🔐 button below.');
+                interaction.message.channel.send({ embeds: [embed], components: [ticketKeepDeleteRow] });
+                const ts = closedAt.getTime();
+                const toClose = ts + (1000 * 60 * 60 * 24);
+                ticketDB[memberID][interaction.channel.id] = {
+                    expires = toClose,
+                    keep = false,
+                    current = false
                 }
+                fs.writeFile('../schemas/tickets.json', JSON.stringify(ticketDB), (err) => {
+                    if (err) console.error(err);
+                });
+                await interaction.channel.lockPermissions();
             }
         } else if (interaction.customId === 'delete!ticket' && interaction.channel.name.includes('ticket')) {
             await interaction.editReply({ embeds: [deletingTicket], ephemeral: true });
-            const conditional = {
-                channelID: interaction.channel.id,
-                current: false
-            };
-            // Gives the info intself from the constant above
-            const results = await TiecketSchema.findOne(conditional);
-            if (results) {
-                const guild = client.guilds.cache.get(results.guildId);
-                const channel = guild.channels.cache.find(r => r.id === results.channelID);
-                if (channel) {
-                    await interaction.channel.messages.fetch({ limit: 100 }).then(async (messages) => {
-                        // Iterate through the messages here with the variable "messages".
-                        const guild = { name: interaction.guild.name, iconURL: function () { return interaction.guild.icon; } };
-                        const channel = { name: interaction.channel.name };
-                        const date = new Date();
-                        const logDelete = new MessageEmbed()
-                            .setColor('FF0000')
-                            .setTitle('Ticket Deleted!')
-                            .addField('Channel:', interaction.channel.name)
-                            .addField('Deleted by:', `<@${interaction.member.id}>`)
-                            .addField('Ticket Deleted At:', date.toLocaleString())
-                            .setTimestamp()
-                            .setFooter('Time message deleted  ', client.user.displayAvatarURL());
-                        await generateTranscript(guild, channel, messages).then(async (url) => {
-                            const file = await new MessageAttachment(url, 'messageLog.html');
-                            await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [logDelete], files: [file] }).catch(console.error());
-                        });
+            const results = ticketDB[member][interaction.channel.id].current;
+            if (results === false) {
+                await interaction.channel.messages.fetch({ limit: 100 }).then(async (messages) => {
+                    // Iterate through the messages here with the variable "messages".
+                    const guild = { name: interaction.guild.name, iconURL: function () { return interaction.guild.icon; } };
+                    const channel = { name: interaction.channel.name };
+                    const date = new Date();
+                    const logDelete = new MessageEmbed()
+                        .setColor('FF0000')
+                        .setTitle('Ticket Deleted!')
+                        .addField('Channel:', interaction.channel.name)
+                        .addField('Deleted by:', `<@${interaction.member.id}>`)
+                        .addField('Ticket Deleted At:', date.toLocaleString())
+                        .setTimestamp()
+                        .setFooter('Time message deleted  ', client.user.displayAvatarURL());
+                    await generateTranscript(guild, channel, messages).then(async (url) => {
+                        const file = await new MessageAttachment(url, 'messageLog.html');
+                        await client.channels.cache.get(config.logging.loggingChannel).send({ embeds: [logDelete], files: [file] }).catch(console.error());
                     });
-                    channel.delete('Ticket Closed');
-                }
-                await TiecketSchema.findOneAndDelete(conditional, async (_err, data) => {
-                    if (data) console.log('Deleted an old ticket channel.');
                 });
+                delete ticketDB[member][interaction.channel.id];
+                fs.writeFile('../schemas/tickets.json', JSON.stringify(ticketDB), (err) => {
+                    if (err) console.error(err);
+                });
+                channel.delete('Ticket Closed');
             }
         } else if (interaction.customId === 'keep!ticket' && interaction.channel.name.includes('ticket')) {
             await interaction.editReply({ embeds: [keepingTicket], ephemeral: true });
             const getSameEmbed = interaction.message.embeds[0];
             await interaction.message.edit({ embeds: [getSameEmbed], components: [ticketKeepDeleteRowDisabled] });
-            const conditional = {
-                channelID: interaction.channel.id,
-                current: false
-            };
-            // Gives the info intself from the constant above
-            const results = await TiecketSchema.findOne(conditional);
-            // If returns true (ticket should be deleted)
-            console.log(results);
-            if (results) {
-                try {
-                    await TiecketSchema.findOneAndUpdate(conditional, { keep: true }, async (_err, data) => {
-                        if (data) {
-                            await interaction.editReply({ embeds: [ticketWillBeKept], ephemeral: true });
-                            await ticketWillBeKept.setDescription(`This ticket will be kept as requested by ${interaction.member}.\nTo delete this ticket press the 🔐 button below.`);
-                            await interaction.channel.send({ embeds: [ticketWillBeKept], components: [deleteButton] });
-                        }
+            const results = ticketDB[member][interaction.channel.id].current;
+            if (results === false) {
+                ticketDB[member][interaction.channel.id].keep = true;
+                fs.writeFile('../schemas/tickets.json', JSON.stringify(ticketDB), (err) => {
+                    if (err) console.error(err);
+                });
+                await interaction.editReply({ embeds: [ticketWillBeKept], ephemeral: true });
+                await ticketWillBeKept.setDescription(`This ticket will be kept (only staff can see the channel) as requested by ${interaction.member}.\nTo delete this ticket press the 🔐 button below.`);
+                await interaction.channel.send({ embeds: [ticketWillBeKept], components: [deleteButton] });
+            }
+        } else if (interaction.customId === 'open!ticket' && interaction.channel.name.includes('ticket')) {
+            await interaction.editReply({ embeds: [openTicket], ephemeral: true });
+            const getSameEmbed = interaction.message.embeds[0];
+            await interaction.message.edit({ embeds: [getSameEmbed], components: [ticketKeepDeleteRowDisabled] });
+            const results = ticketDB[member][interaction.channel.id].current;
+            if (results === false) {
+                ticketDB[member][interaction.channel.id].keep = true;
+                ticketDB[member][interaction.channel.id].current = true;
+                fs.writeFile('../schemas/tickets.json', JSON.stringify(ticketDB), (err) => {
+                    if (err) console.error(err);
+                });
+                for (let member in ticketDB[member][interaction.channel.id].allowedMembers) {
+                    await channel.permissionOverwrites.edit(member, {
+                        VIEW_CHANNEL: true,
+                        VIEW_MESSAGE_HISTORY: true
                     });
-                } catch (e) {
-                    console.error(e);
                 }
+                await interaction.editReply({ embeds: [ticketOpened], ephemeral: true });
+                await ticketOpened.setDescription(`This ticket has been opened as requested by ${interaction.member}.\nTo close this ticket press the 🔒 button below.`);
+                await interaction.channel.send({ embeds: [ticketOpened], components: [closeButton] });
             }
         }
     });
@@ -313,7 +319,4 @@ module.exports = async (client) => {
 
 module.exports.config = {
     displayName: 'Ticket',
-    dbName: 'TEST',
-    // Wait for the database connection to be present
-    loadDBFirst: true
 };

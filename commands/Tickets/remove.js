@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-expressions */
 const { MessageEmbed } = require('discord.js');
-const tiecketSchema = require('../../schemas/ticket-schema');
+const ticketDB = require('../../schemas/tickets.json');
 const config = require('../../config/cfg');
 const getType = async (isBot, dataBase) => {
     for (const _type in config.tickets.differentTypes) {
@@ -53,7 +53,7 @@ module.exports = {
                 await interaction.editReply({ content: 'You did not specify a member to add, make sure you did the command properly!', ephemeral: true });
                 return;
             }
-            const channelDB = await tiecketSchema.findOne({ channelID: interaction.channel.id });
+            const channelDB = ticketDB[member][interaction.channel.id];
             if (!channelDB) {
                 await interaction.editReply({ content: 'SOMETHING WENT WRONG! This ticket cannot be found in our database!', ephemeral: true });
                 return;
@@ -72,6 +72,10 @@ module.exports = {
                 .setColor('#e64b0e')
                 .setTitle('Removed User')
                 .setDescription(`${interaction.member} Has Removed ${member} From This Ticket!`);
+            ticketDB[member][interaction.channel.id].allowedMembers = channel.members;
+            fs.writeFile('../schemas/tickets.json', JSON.stringify(ticketDB), (err) => {
+                if (err) console.error(err);
+            });
             await interaction.channel.send({ embeds: [channelsend] });
             await interaction.editReply({ content: 'Member removed.', ephemeral: true });
         }

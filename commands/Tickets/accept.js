@@ -87,6 +87,4 @@ module.exports = {
 
 module.exports.config = {
     displayName: 'Accept an applicant',
-    dbName: 'ACCEPT',
-    loadDBFirst: true
 };

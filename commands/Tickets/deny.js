@@ -94,6 +94,4 @@ module.exports = {
 
 module.exports.config = {
     displayName: 'End Giveaway',
-    dbName: 'ENDGIVEAWAY',
-    loadDBFirst: true
 };
